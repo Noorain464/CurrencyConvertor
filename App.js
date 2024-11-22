@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { Picker } from '@react-native-picker/picker'; 
-// import { styles } from "./Style"; 
 
 const App = () => {
   const [amount, setAmount] = useState("");
