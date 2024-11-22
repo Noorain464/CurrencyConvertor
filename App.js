@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { Picker } from '@react-native-picker/picker'; 
+import { Picker } from '@react-native-picker/picker';
+import axios from "axios";
 
 const App = () => {
   const [amount, setAmount] = useState("");
@@ -8,46 +9,42 @@ const App = () => {
   const [toCurrency, setToCurrency] = useState("EUR");
   const [currencies, setCurrencies] = useState([]);
   const [convertedAmount, setConvertedAmount] = useState(null);
-  const API_KEY = " aa17a71f58471d83cdf54fb1"
-  const convertCurrency = useCallback(() => {
-    if (!amount) {
-      setConvertedAmount(null);
+  const [exchangeRates, setExchangeRates] = useState({});
+  const API_KEY = "aa17a71f58471d83cdf54fb1"; 
+
+  const fetchExchangeRates = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`
+      );
+      setExchangeRates(response.data.conversion_rates);
+      const currencyList = Object.keys(response.data.conversion_rates);
+      setCurrencies(currencyList);
+    } catch (error) {
+      console.error("Error fetching exchange rates:", error);
+    }
+  }, [fromCurrency]);
+  const convertCurrency = () => {
+    if (!amount || isNaN(amount)) {
+      setConvertedAmount("Please enter a valid number");
       return;
     }
-    fetch(`https://api.exchangerate-api.com/v4/${API_KEY}/latest/${fromCurrency}`)
-      .then((response) => response.json())
-      .then((data) => {
-        const exchangeRates = data.rates;
-        const conversionRate = exchangeRates[toCurrency];
-
-        if (conversionRate) {
-          const result = parseFloat(amount) * conversionRate;
-          setConvertedAmount(result.toFixed(2));
-        } else {
-          setConvertedAmount("Invalid Currency");
-        }
-      })
-      .catch((error) => {
-        console.error("Error converting currency: ", error);
-      });
-  }, [amount, fromCurrency, toCurrency]);
-
-  useEffect(() => {
-    fetch(`https://api.exchangerate-api.com/v4/latest/USD`)
-      .then((response) => response.json())
-      .then((data) => {
-        const currencyList = Object.keys(data.rates);
-        setCurrencies(currencyList);
-      })
-      .catch((error) => {
-        console.error("Error fetching currency data: ", error);
-      });
-  }, []);
+    if (exchangeRates[toCurrency]) {
+      const result = parseFloat(amount) * exchangeRates[toCurrency];
+      setConvertedAmount(result.toFixed(2));
+    } else {
+      setConvertedAmount("Error: Invalid conversion rate");
+    }
+  };
 
   const swapCurrencies = () => {
     setFromCurrency(toCurrency);
     setToCurrency(fromCurrency);
   };
+
+  useEffect(() => {
+    fetchExchangeRates();
+  }, [fromCurrency, fetchExchangeRates]);
 
   return (
     <View style={styles.container}>
@@ -72,9 +69,13 @@ const App = () => {
             onValueChange={(itemValue) => setFromCurrency(itemValue)}
             style={styles.dropdown}
           >
-            {currencies.map((currency) => (
-              <Picker.Item key={currency} label={currency} value={currency} />
-            ))}
+            {currencies.length === 0 ? (
+              <Picker.Item label="Loading..." value="" />
+            ) : (
+              currencies.map((currency) => (
+                <Picker.Item key={currency} label={currency} value={currency} />
+              ))
+            )}
           </Picker>
         </View>
 
@@ -89,9 +90,13 @@ const App = () => {
             onValueChange={(itemValue) => setToCurrency(itemValue)}
             style={styles.dropdown}
           >
-            {currencies.map((currency) => (
-              <Picker.Item key={currency} label={currency} value={currency} />
-            ))}
+            {currencies.length === 0 ? (
+              <Picker.Item label="Loading..." value="" />
+            ) : (
+              currencies.map((currency) => (
+                <Picker.Item key={currency} label={currency} value={currency} />
+              ))
+            )}
           </Picker>
         </View>
 
@@ -111,7 +116,6 @@ const App = () => {
 
 export default App;
 
-// Example of styles (for demonstration purposes)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: 10,
   },
   swapButtonText: {
     fontSize: 10,
