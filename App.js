@@ -8,13 +8,13 @@ const App = () => {
   const [toCurrency, setToCurrency] = useState("EUR");
   const [currencies, setCurrencies] = useState([]);
   const [convertedAmount, setConvertedAmount] = useState(null);
-
+  const API_KEY = " aa17a71f58471d83cdf54fb1"
   const convertCurrency = useCallback(() => {
     if (!amount) {
       setConvertedAmount(null);
       return;
     }
-    fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`)
+    fetch(`https://api.exchangerate-api.com/v4/${API_KEY}/latest/${fromCurrency}`)
       .then((response) => response.json())
       .then((data) => {
         const exchangeRates = data.rates;
